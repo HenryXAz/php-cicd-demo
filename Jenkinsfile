@@ -22,6 +22,18 @@ pipeline {
             }
         }
 
+        stage ('Install Dependencies') {
+            steps {
+                echo 'Instalando dependencias...'
+
+                sh '''
+                    composer install \
+                    --no-interaction \
+                    --prefer-dist
+                '''
+            }
+        }
+
         stage('Validate') {
             steps {
                 echo 'Validando sintaxis PHP...'
@@ -34,21 +46,33 @@ pipeline {
             }
         }
 
-        stage('Package') {
+        stage ('Unit Tests') {
             steps {
-                echo 'Preparando release...'
+                echo 'Ejecutando PHPUnit...'
 
                 sh '''
-                    rm -rf build
-                    mkdir build
-
-                    cp -r public build/
-                    cp composer.json build/
-
-                    echo "Contenido del artefacto:"
-                    find build -maxdepth 3 -type f
+                    composer test tests
                 '''
             }
+        }
+
+        stage ('Package') {
+            echo 'Preparando release...'
+
+            sh '''
+                rm -rf build
+                mkdir build
+
+                cp -r public build/
+                cp -r src build/
+                cp -r vendor build/
+
+                cp composer.json build/
+                cp composer.lock build/
+
+                echo "Contenido del artefacto:"
+                find build -maxdepth 2 -type f | head -50
+            '''
         }
 
         stage('Deploy') {
