@@ -1,3 +1,24 @@
+def deployTo(String environment, String host) {
+    echo "Desplegando en ${environment} (${host})"
+
+    // FIXED: Changed to triple double-quotes (""") so Groovy evaluates ${host}
+    // Also used env.BUILD_NUMBER and escaped \$RELEASE so Bash handles it
+    sh """
+        RELEASE="release-${env.BUILD_NUMBER}"
+
+        ssh deploy@${host} \\
+            "mkdir -p /var/www/myapp/releases/\\$RELEASE"
+
+        scp -r build/* \\
+            deploy@${host}:/var/www/myapp/releases/\\$RELEASE/
+
+        ssh deploy@${host} \\
+            "ln -sfn /var/www/myapp/releases/\\$RELEASE /var/www/myapp/current"
+
+        echo "Deployment ${environment} completado"
+    """
+}
+
 pipeline {
 
     agent any
@@ -77,76 +98,83 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage ('Deploy DEV') {
             steps {
-                echo 'Desplegando release...'
+                script {
+                    deployTo('DEV', 'development')
+                }
+            }
+        }
 
+        stage ('Health Check DEV') {
+            steps { // FIXED: Changed 'stage' to 'steps'
                 sh '''
-                    RELEASE="release-${BUILD_NUMBER}"
-
-                    ssh deploy@${DEPLOY_HOST} \
-                        "readlink -f ${APP_DIR}/current || true" \
-                        > previous_release.txt
-
-                    ssh deploy@${DEPLOY_HOST} \
-                        "mkdir -p ${APP_DIR}/releases/$RELEASE"
-
-                    scp -r build/* \
-                        deploy@${DEPLOY_HOST}:${APP_DIR}/releases/$RELEASE/
-
-                    ssh deploy@${DEPLOY_HOST} \
-                        "ln -sfn ${APP_DIR}/releases/$RELEASE ${APP_DIR}/current"
-
-                    touch deployment_performed
+                    sleep 2
+                    curl --fail --silent --show-error http://development/
+                    echo
+                    echo "DEV saludable"
                 '''
             }
         }
 
-        stage('Health Check') {
+        stage ('Deploy QA') {
+            steps {
+                script {
+                    deployTo('QA', 'qa')
+                }
+            }
+        }
+
+        stage ('Health Check QA') {
             steps {
                 sh '''
                     sleep 2
+                    curl --fail --silent --show-error http://qa
+                '''
+                // FIXED: Removed the invalid empty 'echo'
+                echo "QA saludable"
+            }
+        }
 
-                    curl --fail \
-                         --silent \
-                         --show-error \
-                         http://${DEPLOY_HOST}/
+        stage ('Production Approval') {
+            steps {
+                input message: 'Desplegar esta versión en producción?',
+                    ok: 'Deploy Production'
+            }
+        }
 
+        stage ('Deploy PROD') {
+            steps {
+                script {
+                    deployTo('PROD', 'production')
+                }
+            }
+        }
+
+        stage ('Health Check PROD') {
+            steps {
+                sh '''
+                    sleep 2
+                    curl --fail --silent --show-error http://production
                     echo
-                    echo "Health check exitoso"
+                    echo "PRODUCTION saludable"
                 '''
             }
         }
-    }
+
+    } // FIXED: Added this missing closing brace for 'stages'
 
     post {
-
         success {
             echo 'Pipeline completado correctamente.'
         }
 
         failure {
-            echo 'Pipeline fallido.'
+            echo 'Pipeline fallido. Revisa el ambiente y stage que produjo el error.'
+        }
 
-            sh '''
-                if [ -f deployment_performed ] && \
-                   [ -s previous_release.txt ]; then
-
-                    PREVIOUS_RELEASE=$(cat previous_release.txt)
-
-                    echo "Deployment realizado."
-                    echo "Ejecutando rollback hacia:"
-                    echo "$PREVIOUS_RELEASE"
-
-                    ssh deploy@${DEPLOY_HOST} \
-                        "ln -sfn $PREVIOUS_RELEASE ${APP_DIR}/current"
-
-                    echo "Rollback completado"
-
-                else
-                    echo "No se realizó deployment. No es necesario rollback."
-                fi
-            '''
+        aborted {
+            echo 'Pipeline cancelado.'
         }
     }
 }
