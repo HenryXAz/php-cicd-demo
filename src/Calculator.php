@@ -6,7 +6,7 @@ namespace App;
 final class Calculator {
     public function add (int $a, $b) : int
     {
-        return $a - $b;
+        return $a + $b;
     }
 
     public function substract(int $a, int $b): int
