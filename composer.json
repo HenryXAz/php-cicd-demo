@@ -1,0 +1,5 @@
+{
+    "name": "lab/php-cicd-demo",
+    "description": "PHP CI/CD laboratory",
+    "require": {}
+}
