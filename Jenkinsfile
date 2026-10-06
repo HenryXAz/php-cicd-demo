@@ -57,22 +57,24 @@ pipeline {
         }
 
         stage ('Package') {
-            echo 'Preparando release...'
+            steps {
+                echo 'Preparando release...'
 
-            sh '''
-                rm -rf build
-                mkdir build
+                sh '''
+                    rm -rf build
+                    mkdir build
 
-                cp -r public build/
-                cp -r src build/
-                cp -r vendor build/
+                    cp -r public build/
+                    cp -r src build/
+                    cp -r vendor build/
 
-                cp composer.json build/
-                cp composer.lock build/
+                    cp composer.json build/
+                    cp composer.lock build/
 
-                echo "Contenido del artefacto:"
-                find build -maxdepth 2 -type f | head -50
-            '''
+                    echo "Contenido del artefacto:"
+                    find build -maxdepth 2 -type f | head -50
+                '''
+            }
         }
 
         stage('Deploy') {
