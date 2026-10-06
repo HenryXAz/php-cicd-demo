@@ -1,32 +1,25 @@
-def deployTo(String environment, String host) {
-    echo "Desplegando en ${environment} (${host})"
+def deployTo(String environmentName, String host) {
+    echo "Desplegando en ${environmentName} (${host})"
 
-    // FIXED: Changed to triple double-quotes (""") so Groovy evaluates ${host}
-    // Also used env.BUILD_NUMBER and escaped \$RELEASE so Bash handles it
     sh """
-        RELEASE="release-${env.BUILD_NUMBER}"
+        echo "Creando release-${env.BUILD_NUMBER}"
 
-        ssh deploy@${host} \\
-            "mkdir -p /var/www/myapp/releases/\\$RELEASE"
+        ssh deploy@${host} \
+            "mkdir -p /var/www/myapp/releases/release-${env.BUILD_NUMBER}"
 
-        scp -r build/* \\
-            deploy@${host}:/var/www/myapp/releases/\\$RELEASE/
+        scp -r build/* \
+            deploy@${host}:/var/www/myapp/releases/release-${env.BUILD_NUMBER}/
 
-        ssh deploy@${host} \\
-            "ln -sfn /var/www/myapp/releases/\\$RELEASE /var/www/myapp/current"
+        ssh deploy@${host} \
+            "ln -sfn /var/www/myapp/releases/release-${env.BUILD_NUMBER} /var/www/myapp/current"
 
-        echo "Deployment ${environment} completado"
+        echo "Deployment ${environmentName} completado"
     """
 }
 
 pipeline {
 
     agent any
-
-    environment {
-        APP_DIR = '/var/www/myapp'
-        DEPLOY_HOST = 'production'
-    }
 
     stages {
 
@@ -162,7 +155,7 @@ pipeline {
             }
         }
 
-    } // FIXED: Added this missing closing brace for 'stages'
+    } 
 
     post {
         success {
