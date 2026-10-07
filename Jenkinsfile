@@ -86,6 +86,18 @@ pipeline {
             }
         }
 
+        stage ('Test SSH credentials') {
+            steps {
+                sshagent(credentials: ['deploy-ssh-key']) {
+                    sh '''
+                        ssh deploy@development whoami
+                        ssh deploy@qa whoami
+                        ssh deploy@production whoami
+                    '''
+                }
+            }
+        }
+
         stage ('Install Dependencies') {
             steps {
                 echo 'Instalando dependencias...'
