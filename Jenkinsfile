@@ -216,6 +216,13 @@ pipeline {
             }
         }
 
+        stage ('Production Approval') {
+            steps {
+                input message: 'Desplegar esta versión en producción??',
+                    ok: 'Deploy Production'
+            }
+        }
+
         stage ('Deploy PROD') {
             steps {
                 sshagent(credentials: ['deploy-ssh-key']) {
