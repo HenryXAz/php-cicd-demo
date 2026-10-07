@@ -22,7 +22,7 @@ def deployTo(String environmentName, String host) {
         echo "\$PREVIOUS_RELEASE" > previous_${environmentName}.txt
 
         ssh deploy@${host} \
-            "mkidr -p /var/www/myapp/releases/${releaseName}"
+            "mkdir -p /var/www/myapp/releases/${releaseName}"
 
         scp -r build/* \
             deploy@${host}:/var/www/myapp/releases/${releaseName}/
