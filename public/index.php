@@ -1,5 +1,5 @@
 <?php
 
 echo "<h1>PHP CI/CD Demo</h1>";
-echo "<p>Deployment desde repositorio Git (PRUEBA SSHAGENT)</p>";
-echo "<p>Version 6.0</p>";
+echo "<p>Deployment desde repositorio Git (PRUEBA TRAZABILIDAD CON HASH)</p>";
+echo "<p>Version 7.0</p>";

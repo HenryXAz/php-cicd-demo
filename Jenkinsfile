@@ -1,12 +1,18 @@
 def deployTo(String environmentName, String host) {
-    echo "Desplegando en ${environmentName} (${host})"
+
+    echo "Desplegando en ${environmentName} (${host})" 
+
+    def commitSha = sh (
+        script: 'git rev-parse --short HEAD',
+        returnStdout: true 
+    ).trim()
+
+    def releaseName = "release-${commitSha}"
+
+    echo "Release: ${releaseName}"
 
     sh """
         set -e
-
-        RELEASE="release-${env.BUILD_NUMBER}"
-
-        echo "Release nueva: \$RELEASE"
 
         PREVIOUS_RELEASE=\$(ssh deploy@${host} \
             "readlink -f /var/www/myapp/current || true")
@@ -16,16 +22,48 @@ def deployTo(String environmentName, String host) {
         echo "\$PREVIOUS_RELEASE" > previous_${environmentName}.txt
 
         ssh deploy@${host} \
-            "mkdir -p /var/www/myapp/releases/\$RELEASE"
+            "mkidr -p /var/www/myapp/releases/${releaseName}"
 
         scp -r build/* \
-            deploy@${host}:/var/www/myapp/releases/\$RELEASE/
+            deploy@${host}:/var/www/myapp/releases/${releaseName}/
 
         ssh deploy@${host} \
-            "ln -sfn /var/www/myapp/releases/\$RELEASE /var/www/myapp/current"
+            "ln -sfn /var/www/myapp/releases/${releaseName} /var/www/myapp/current"
 
         echo "Deployment ${environmentName} completado"
     """
+
+
+
+
+
+    // echo "Desplegando en ${environmentName} (${host})"
+
+    // sh """
+    //     set -e
+
+    //     RELEASE="release-${env.BUILD_NUMBER}"
+
+    //     echo "Release nueva: \$RELEASE"
+
+    //     PREVIOUS_RELEASE=\$(ssh deploy@${host} \
+    //         "readlink -f /var/www/myapp/current || true")
+
+    //     echo "Release anterior: \$PREVIOUS_RELEASE"
+
+    //     echo "\$PREVIOUS_RELEASE" > previous_${environmentName}.txt
+
+    //     ssh deploy@${host} \
+    //         "mkdir -p /var/www/myapp/releases/\$RELEASE"
+
+    //     scp -r build/* \
+    //         deploy@${host}:/var/www/myapp/releases/\$RELEASE/
+
+    //     ssh deploy@${host} \
+    //         "ln -sfn /var/www/myapp/releases/\$RELEASE /var/www/myapp/current"
+
+    //     echo "Deployment ${environmentName} completado"
+    // """
 }
 
 def rollBack(String environmentName, String host) {
@@ -135,8 +173,14 @@ pipeline {
                     cp composer.json build/
                     cp composer.lock build/
 
+                    git rev-parse HEAD > build/REVISION
+                    git rev-parse --short HEAD > build/REVISION_SHORT
+
                     echo "Contenido del artefacto:"
                     find build -maxdepth 2 -type f | head -50
+
+                    echo "Commit empaquetado:"
+                    cat build/REVISION
                 '''
             }
         }
