@@ -2,4 +2,4 @@
 
 echo "<h1>PHP CI/CD Demo</h1>";
 echo "<p>Deployment desde repositorio Git (PRUEBA TRAZABILIDAD CON HASH)</p>";
-echo "<p>Version 7.0</p>";
+echo "<p>Version 8.0</p>";

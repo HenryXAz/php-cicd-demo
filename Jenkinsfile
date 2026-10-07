@@ -32,38 +32,6 @@ def deployTo(String environmentName, String host) {
 
         echo "Deployment ${environmentName} completado"
     """
-
-
-
-
-
-    // echo "Desplegando en ${environmentName} (${host})"
-
-    // sh """
-    //     set -e
-
-    //     RELEASE="release-${env.BUILD_NUMBER}"
-
-    //     echo "Release nueva: \$RELEASE"
-
-    //     PREVIOUS_RELEASE=\$(ssh deploy@${host} \
-    //         "readlink -f /var/www/myapp/current || true")
-
-    //     echo "Release anterior: \$PREVIOUS_RELEASE"
-
-    //     echo "\$PREVIOUS_RELEASE" > previous_${environmentName}.txt
-
-    //     ssh deploy@${host} \
-    //         "mkdir -p /var/www/myapp/releases/\$RELEASE"
-
-    //     scp -r build/* \
-    //         deploy@${host}:/var/www/myapp/releases/\$RELEASE/
-
-    //     ssh deploy@${host} \
-    //         "ln -sfn /var/www/myapp/releases/\$RELEASE /var/www/myapp/current"
-
-    //     echo "Deployment ${environmentName} completado"
-    // """
 }
 
 def rollBack(String environmentName, String host) {
@@ -104,10 +72,33 @@ def healthCheck(String environmentName, String host) {
     """
 }
 
+def cleanupReleases(String environmentName, String host) {
+    echo "Limpiando releases antiguas en ${environmentName}"
+
+    sh """
+        ssh deploy@${host} '
+            cd /var/www/myapp/releases
+
+            ls -1dt release-* 2>/dev/null \
+                | tail -n +6 \
+                | xargs -r rm -rf 
+        '
+    """
+}
 
 pipeline {
 
     agent any
+
+    options {
+        disableConcurrentBuilds()
+
+        buildDiscarder(
+            logRotator(
+                numToKeepStr: '20'
+            )
+        )
+    }
 
     stages {
 
@@ -192,6 +183,7 @@ pipeline {
                         try {
                             deployTo('DEV', 'development')
                             healthCheck('DEV', 'development')
+                            cleanupReleases('DEV', 'development')
                         } catch (Exception error) {
                             echo 'DEV falló. Ejecutando rollback...'
 
@@ -211,6 +203,7 @@ pipeline {
                         try {
                             deployTo('QA', 'qa')
                             healthCheck('QA', 'qa')
+                            cleanupReleases('QA', 'qa')
                         } catch (Exception error) {
                             echo 'QA falló. Ejecutando rollback...'
 
@@ -230,6 +223,7 @@ pipeline {
                         try {
                             deployTo('PROD', 'production');
                             healthCheck('PROD', 'production')
+                            cleanupReleases('PROD', 'production')
                         } catch (Exception error) {
                             echo 'PRODUCCIÓN falló. Ejecutando rollback...'
 
