@@ -1,43 +1,24 @@
-// def deployTo(String environmentName, String host) {
-//     echo "Desplegando en ${environmentName} (${host})"
-
-//     sh """
-//         echo "Creando release-${env.BUILD_NUMBER}"
-
-//         ssh deploy@${host} \
-//             "mkdir -p /var/www/myapp/releases/release-${env.BUILD_NUMBER}"
-
-//         scp -r build/* \
-//             deploy@${host}:/var/www/myapp/releases/release-${env.BUILD_NUMBER}/
-
-//         ssh deploy@${host} \
-//             "ln -sfn /var/www/myapp/releases/release-${env.BUILD_NUMBER} /var/www/myapp/current"
-
-//         echo "Deployment ${environmentName} completado"
-//     """
-// }
-
 def deployTo(String environmentName, String host) {
     echo "Desplegando en ${environmentName} (${host})"
 
     sh """
         set -e
 
-        RELEASE="release-${env.BUILDER_NUMBER}"
+        RELEASE="release-${env.BUILD_NUMBER}"
 
         echo "Release nueva: \$RELEASE"
 
-        PREVIOUS_RELEASE = \$(ssh deploy@${host} \
-            "readlink -f /var/www/myapp/current | | true")
+        PREVIOUS_RELEASE=\$(ssh deploy@${host} \
+            "readlink -f /var/www/myapp/current || true")
 
         echo "Release anterior: \$PREVIOUS_RELEASE"
 
-        echo "\$PREVIOUS_RELEASE" > previous_${PREVIOUS_RELEASE}.txt
+        echo "\$PREVIOUS_RELEASE" > previous_${environmentName}.txt
 
         ssh deploy@${host} \
             "mkdir -p /var/www/myapp/releases/\$RELEASE"
 
-        scp -r buiid/* \
+        scp -r build/* \
             deploy@${host}:/var/www/myapp/releases/\$RELEASE/
 
         ssh deploy@${host} \
@@ -54,6 +35,7 @@ def rollBack(String environmentName, String host) {
         PREVIOUS_RELEASE=\$(cat previous_${environmentName}.txt)
 
         if [ -n "\$PREVIOUS_RELEASE" ]; then
+
             echo "Restaurando \$PREVIOUS_RELEASE"
 
             ssh deploy@${host} \
@@ -61,10 +43,10 @@ def rollBack(String environmentName, String host) {
 
             echo "Rollback de ${environmentName} completado"
 
-        else 
-            echo "No existe un release anterior."
+        else
+            echo "No existe una release anterior."
             exit 1
-        fi 
+        fi
     """
 }
 
@@ -77,12 +59,13 @@ def healthCheck(String environmentName, String host) {
         curl --fail \
             --silent \
             --show-error \
-            http://${host}
+            http://${host}/
 
-        echo 
+        echo
         echo "${environmentName} saludable"
     """
 }
+
 
 pipeline {
 
@@ -175,25 +158,6 @@ pipeline {
             }
         }
 
-        // stage ('Deploy DEV') {
-        //     steps {
-        //         script {
-        //             deployTo('DEV', 'development')
-        //         }
-        //     }
-        // }
-
-        // stage ('Health Check DEV') {
-        //     steps { // FIXED: Changed 'stage' to 'steps'
-        //         sh '''
-        //             sleep 2
-        //             curl --fail --silent --show-error http://development/
-        //             echo
-        //             echo "DEV saludable"
-        //         '''
-        //     }
-        // }
-
         stage ('Deploy QA') {
             steps {
                 script {
@@ -211,32 +175,6 @@ pipeline {
             }
         }
 
-        // stage ('Deploy QA') {
-        //     steps {
-        //         script {
-        //             deployTo('QA', 'qa')
-        //         }
-        //     }
-        // }
-
-        // stage ('Health Check QA') {
-        //     steps {
-        //         sh '''
-        //             sleep 2
-        //             curl --fail --silent --show-error http://qa
-        //         '''
-        //         // FIXED: Removed the invalid empty 'echo'
-        //         echo "QA saludable"
-        //     }
-        // }
-
-        // stage ('Production Approval') {
-        //     steps {
-        //         input message: 'Desplegar esta versión en producción?',
-        //             ok: 'Deploy Production'
-        //     }
-        // }
-
         stage ('Deploy PROD') {
             steps {
                 script {
@@ -253,26 +191,6 @@ pipeline {
                 }
             }
         }
-
-        // stage ('Deploy PROD') {
-        //     steps {
-        //         script {
-        //             deployTo('PROD', 'production')
-        //         }
-        //     }
-        // }
-
-        // stage ('Health Check PROD') {
-        //     steps {
-        //         sh '''
-        //             sleep 2
-        //             curl --fail --silent --show-error http://production
-        //             echo
-        //             echo "PRODUCTION saludable"
-        //         '''
-        //     }
-        // }
-
     } 
 
     post {
