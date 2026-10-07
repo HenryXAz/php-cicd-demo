@@ -32,7 +32,7 @@ def deployTo(String environmentName, String host) {
 
         echo "Release anterior: \$PREVIOUS_RELEASE"
 
-        echo "\$PREVIOUS_RELEASE" > previous_${environment}.txt
+        echo "\$PREVIOUS_RELEASE" > previous_${PREVIOUS_RELEASE}.txt
 
         ssh deploy@${host} \
             "mkdir -p /var/www/myapp/releases/\$RELEASE"
