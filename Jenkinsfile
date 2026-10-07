@@ -31,7 +31,7 @@ def deployTo(String environmentName, String host) {
             "test -f /var/www/myapp/shared/.env"
 
         ssh deploy@${host} \
-            "ln -sfn /var/www/myapp/shared.env /var/www/myapp/releases/${releaseName}/.env"
+            "ln -sfn /var/www/myapp/shared/.env /var/www/myapp/releases/${releaseName}/.env"
 
         ssh deploy@${host} \
             "ln -sfn /var/www/myapp/releases/${releaseName} /var/www/myapp/current"
