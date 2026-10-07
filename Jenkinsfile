@@ -28,6 +28,12 @@ def deployTo(String environmentName, String host) {
             deploy@${host}:/var/www/myapp/releases/${releaseName}/
 
         ssh deploy@${host} \
+            "test -f /var/www/myapp/shared/.env"
+
+        ssh deploy@${host} \
+            "ln -sfn /var/www/myapp/shared.env /var/www/myapp/releases/${releaseName}/.env"
+
+        ssh deploy@${host} \
             "ln -sfn /var/www/myapp/releases/${releaseName} /var/www/myapp/current"
 
         echo "Deployment ${environmentName} completado"
@@ -163,6 +169,11 @@ pipeline {
 
                     cp composer.json build/
                     cp composer.lock build/
+
+                    if find build -name '.env' -print -quit | grep -q .; then
+                        echo "ERROR: Se encontró un archivo .env dentro del artefacto"
+                        exit 1
+                    fi
 
                     git rev-parse HEAD > build/REVISION
                     git rev-parse --short HEAD > build/REVISION_SHORT

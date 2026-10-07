@@ -1,5 +1,10 @@
 <?php
 
+$envFile = dirname(__DIR__) . "/.env";
+
+$config = parse_ini_file($envFile);
+
+$appEnv = $config['APP_ENV'] ?? 'unknown';
+
 echo "<h1>PHP CI/CD Demo</h1>";
-echo "<p>Deployment desde repositorio Git (PRUEBA TRAZABILIDAD CON HASH)</p>";
-echo "<p>Version 13.0</p>";
+echo "<p>Environment: " . htmlspecialchars($appEnv) .  "</p>";
