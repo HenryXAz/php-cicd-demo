@@ -86,18 +86,6 @@ pipeline {
             }
         }
 
-        stage ('Test SSH credentials') {
-            steps {
-                sshagent(credentials: ['deploy-ssh-key']) {
-                    sh '''
-                        ssh deploy@development whoami
-                        ssh deploy@qa whoami
-                        ssh deploy@production whoami
-                    '''
-                }
-            }
-        }
-
         stage ('Install Dependencies') {
             steps {
                 echo 'Instalando dependencias...'
@@ -155,16 +143,18 @@ pipeline {
 
         stage ('Deploy DEV') {
             steps {
-                script {
-                    try {
-                        deployTo('DEV', 'development')
-                        healthCheck('DEV', 'development')
-                    } catch (Exception error) {
-                        echo 'DEV falló. Ejecutando rollback...'
+                sshagent(credentials: ['deploy-ssh-key']) {
+                    script {
+                        try {
+                            deployTo('DEV', 'development')
+                            healthCheck('DEV', 'development')
+                        } catch (Exception error) {
+                            echo 'DEV falló. Ejecutando rollback...'
 
-                        rollBack('DEV', 'development')
+                            rollBack('DEV', 'development')
 
-                        throw error 
+                            throw error 
+                        }
                     }
                 }
             }
@@ -172,16 +162,18 @@ pipeline {
 
         stage ('Deploy QA') {
             steps {
-                script {
-                    try {
-                        deployTo('QA', 'qa')
-                        healthCheck('QA', 'qa')
-                    } catch (Exception error) {
-                        echo 'QA falló. Ejecutando rollback...'
+                sshagent(credentials: ['deploy-ssh-key']) {
+                    script {
+                        try {
+                            deployTo('QA', 'qa')
+                            healthCheck('QA', 'qa')
+                        } catch (Exception error) {
+                            echo 'QA falló. Ejecutando rollback...'
 
-                        rollBack('QA', 'qa')
+                            rollBack('QA', 'qa')
 
-                        throw error
+                            throw error
+                        }
                     }
                 }
             }
@@ -189,16 +181,18 @@ pipeline {
 
         stage ('Deploy PROD') {
             steps {
-                script {
-                    try {
-                        deployTo('PROD', 'production');
-                        healthCheck('PROD', 'production')
-                    } catch (Exception error) {
-                        echo 'PRODUCCIÓN falló. Ejecutando rollback...'
+                sshagent(credentials: ['deploy-ssh-key']) {
+                    script {
+                        try {
+                            deployTo('PROD', 'production');
+                            healthCheck('PROD', 'production')
+                        } catch (Exception error) {
+                            echo 'PRODUCCIÓN falló. Ejecutando rollback...'
 
-                        rollBack('PROD', 'production')
-                        
-                        throw error
+                            rollBack('PROD', 'production')
+
+                            throw error
+                        }
                     }
                 }
             }
